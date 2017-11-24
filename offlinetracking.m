@@ -33,6 +33,8 @@ particle.initime = 183;
 particle.inifreq = 100;
 % timestep of particle tracking in days
 particle.timestep = 2^-5;
+% Number of seeding events
+particle.ininumber = 12;
 % length of particle tracking experiment in days
 particle.length = 60;
 % frequency of particles output (in days)
@@ -101,8 +103,12 @@ for tt = particle.initime:particle.timestep:particle.initime+particle.length
     
     % If day of year matches the seeding frequency
     if  mod(tt-particle.initime,particle.inifreq)<=1e-10
+    % If day of year matches the seeding frequency (threshold is to account
+    % for rouding error is inifreq is not a power of 2).
+    if  mod(tt-particle.initime,particle.inifreq)<=1e-10 && particle.ininumber ~= 0
         % Seed particles
         run iniparticles
+        particle.ininumber = particle.ininumber -1;
     end
     
     % Display total number of particle in the experiment
