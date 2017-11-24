@@ -41,6 +41,11 @@ model.z = [];
 model.RHO = [];
 model.T = [];
 model.S = [];
+model.u = [];
+model.v = [];
+model.w = [];
+model.vor = [];
+model.pv = [];
 model.doy = [];
 
 for ii = 1:length(timestepind)
@@ -51,7 +56,7 @@ for ii = 1:length(timestepind)
     % Import velocity fluxes
     model.uf(:,:,:,ii) = ncread(filename,'uf')*1e3*1e5;
     model.vf(:,:,:,ii) = ncread(filename,'vf')*1e3*1e5;
-    model.wf(:,:,:,ii) = ncread(filename,'wf')*1e5*1e5/1000;
+    model.wf(:,:,:,ii) = ncread(filename,'wf')*1e5*1e5*1e-3/1e-1;
     
     % extract coordinate from full_* files
     filename2 = [files2(timestepind(ii)).folder,'/',files2(timestepind(ii)).name];
@@ -64,6 +69,11 @@ for ii = 1:length(timestepind)
     model.RHO(:,:,:,ii) = ncread(filename2,'rho');
     model.T(:,:,:,ii) = ncread(filename2,'temp');
     model.S(:,:,:,ii) = ncread(filename2,'s');
+    model.u(:,:,:,ii) = ncread(filename2,'u');
+    model.v(:,:,:,ii) = ncread(filename2,'v');
+    model.w(:,:,:,ii) = ncread(filename2,'w')/1000;
+    model.vor(:,:,:,ii) = ncread(filename2,'vor');
+    model.pv(:,:,:,ii) = ncread(filename2,'pv');
     
     % Extract DOY from file name
     model.doy(ii) = str2double(filename(end-8:end-4))*432/86400 + model.start_day;
