@@ -8,7 +8,7 @@ nowtime = clock;
 nowtime = datestr(nowtime,'ddmmmyy-HHMM');
 
 % Open the file
-fileID = fopen([particle.outputdir,'/',nowtime,'particle_tracking_configuration','.out'],'w');
+fileID = fopen([particle.outputdir,'/',nowtime,'_',particle.outputfilename,'_configuration','.out'],'w');
 
 % Write the data
 fprintf(fileID,'%s\n','******** OCEAN MODEL PARAMETERS ********');
