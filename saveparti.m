@@ -1,5 +1,5 @@
 %% This routine saves the particle data either in a CSV file, or in an
-% SQLite database. 
+% SQLite database.
 %       If saved in a CSV file, one file is created for every recorded
 %       timestep
 %       If saved as sqlite, data is added to the database at every recorded
@@ -37,9 +37,9 @@ if strcmp(particle.outputformat,'csv')
     
     % Prints Header
     fprintf(fileID,'%s\n',HEADER);
-    fprintf(fileID,'%03.2f, %u, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n',...
+    fprintf(fileID,'%03.2f, %u, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n',...
         transpose(cat(2,parti.doy, parti.id, parti.x, parti.y, parti.z, parti.u, parti.v, ...
-        parti.w, parti.wsink, parti.wtotal, parti.s, parti.t, parti.rho)));
+        parti.w, parti.wsink, parti.wtotal, parti.s, parti.t, parti.rho, parti.pv, parti.vor)));
     fclose(fileID);
     clear vartoprint thefields HEADER FILENAME fileID
     
@@ -58,7 +58,7 @@ elseif strcmp(particle.outputformat,'sqlite')
         conn = sqlite(fullfile(particle.outputdir,dbfile),'create');
         
         % Creates the table in the database
-        sqltable = ['CREATE TABLE ',tablename,' (DOY REAL, ID INTEGER, x REAL, y REAL, z REAL, u REAL, v REAL, w REAL, wsink REAL, wtotal REAL, salinity REAL, temperature REAL, density REAL);'];
+        sqltable = ['CREATE TABLE ',tablename,' (DOY REAL, ID INTEGER, x REAL, y REAL, z REAL, u REAL, v REAL, w REAL, wsink REAL, wtotal REAL, salinity REAL, temperature REAL, density REAL, PV REAL, vorticity REAL);'];
         exec(conn,sqltable);
     else
         % test if file already exist at the beginning of the run
@@ -76,7 +76,7 @@ elseif strcmp(particle.outputformat,'sqlite')
     end
     
     % Export particle data into the database
-    colnames = {'DOY', 'ID','x','y','z','u','v','w','wsink','wtotal','salinity','temperature','density'};
+    colnames = {'DOY', 'ID','x','y','z','u','v','w','wsink','wtotal','salinity','temperature','density','PV','vorticity'};
     if isempty(parti.x)==0
         insert(conn,tablename,colnames,cat(2,...
             parti.doy,...
@@ -91,7 +91,9 @@ elseif strcmp(particle.outputformat,'sqlite')
             parti.wtotal,...
             parti.s,...
             parti.t,...
-            parti.rho))
+            parti.rho,...
+            parti.pv,...
+            parti.vor))
     end
     % Close connection
     close(conn)
