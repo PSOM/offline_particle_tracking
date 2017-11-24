@@ -4,7 +4,7 @@
 
 disp('PROJECT PARTICLE DATA... ')
 
-%% STEP 1
+%% STEPS
 %       - Get the velocity fluxes at the faces surrounding the particle's
 %           location
 %       - Compute the variables necessary for the differential equation
@@ -13,10 +13,15 @@ disp('PROJECT PARTICLE DATA... ')
 %           one of the cell face (in x, y, or z)
 %           if the time is shorter than the particle tracking timestep,
 %           then divide the timestep into subtimesteps
+%       - Get new particle position
+
+h = waitbar(0,'Advection of particles, please wait...');
 
 counter_remover = 0;
 for ii = 1:length(parti.x)
-    
+    disp('loopy loop?')
+    waitbar(ii / length(parti.x),h,['Advection of particles, please wait... [',num2str(ii),'/',num2str(length(parti.x)),']'])
+
     % ii can be larger than length(parti.x) only because some values are
     % removed when particles are outside of the domain. so parti.x possibly
     % changes length within the loop
@@ -165,21 +170,21 @@ for ii = 1:length(parti.x)
             model.y(2:end-1)>=model.yf(face_jm1) & model.y(2:end-1)<=model.yf(face_j),...
             face_km1) -...
             betaz*rzkm1;
-%         
-%         rz0 = -parti.z(ii)/Dz;
-%         rzkm1 = -model.zf(face_km1)/Dz;
-%         rzk = -model.zf(face_k)/Dz;
-%         betaz = model.wf(model.x(2:end-1)>=model.xf(face_im1) & model.x(2:end-1)<=model.xf(face_i),...
-%             model.y(2:end-1)>=model.yf(face_jm1) & model.y(2:end-1)<=model.yf(face_j),...
-%             face_km1) - ...
-%             model.wf(model.x(2:end-1)>=model.xf(face_im1) & model.x(2:end-1)<=model.xf(face_i),...
-%             model.y(2:end-1)>=model.yf(face_jm1) & model.y(2:end-1)<=model.yf(face_j),...
-%             face_k);
-%         betaz=-betaz;
-%         deltaz = model.wf(model.x(2:end-1)>=model.xf(face_im1) & model.x(2:end-1)<=model.xf(face_i),...
-%             model.y(2:end-1)>=model.yf(face_jm1) & model.y(2:end-1)<=model.yf(face_j),...
-%             face_km1) -...
-%             betaz*rzkm1;
+        %
+        %         rz0 = -parti.z(ii)/Dz;
+        %         rzkm1 = -model.zf(face_km1)/Dz;
+        %         rzk = -model.zf(face_k)/Dz;
+        %         betaz = model.wf(model.x(2:end-1)>=model.xf(face_im1) & model.x(2:end-1)<=model.xf(face_i),...
+        %             model.y(2:end-1)>=model.yf(face_jm1) & model.y(2:end-1)<=model.yf(face_j),...
+        %             face_km1) - ...
+        %             model.wf(model.x(2:end-1)>=model.xf(face_im1) & model.x(2:end-1)<=model.xf(face_i),...
+        %             model.y(2:end-1)>=model.yf(face_jm1) & model.y(2:end-1)<=model.yf(face_j),...
+        %             face_k);
+        %         betaz=-betaz;
+        %         deltaz = model.wf(model.x(2:end-1)>=model.xf(face_im1) & model.x(2:end-1)<=model.xf(face_i),...
+        %             model.y(2:end-1)>=model.yf(face_jm1) & model.y(2:end-1)<=model.yf(face_j),...
+        %             face_km1) -...
+        %             betaz*rzkm1;
         
         %% Compute the shortest time it would take the particle to reach one of the
         % cell faces
@@ -203,10 +208,10 @@ for ii = 1:length(parti.x)
         % direction of the velocity at the particle's location. Hence the
         % imaginary number: does not matter how long, the particle will
         % never reach that face.
-%         if isreal(Dtmaxtemp)==0
-%             warning('imaginary time...')
-%             error('blop')
-%         end
+        %         if isreal(Dtmaxtemp)==0
+        %             warning('imaginary time...')
+        %             error('blop')
+        %         end
         
         if strcmp(particle.direction,'forward')
             % = NaN;
@@ -236,12 +241,12 @@ for ii = 1:length(parti.x)
         %=== Assign x-position to particle.
         %=================
         rx1 = (rx0 + deltax/betax)*exp(-betax*ds)-(deltax/betax);
-         if abs(rx1-rxim1)<1e-11
-             rx1 = rxim1;
-         end
-         if abs(rx1-rxi)<1e-11
-             rx1 = rxi;
-         end
+        if abs(rx1-rxim1)<1e-11
+            rx1 = rxim1;
+        end
+        if abs(rx1-rxi)<1e-11
+            rx1 = rxi;
+        end
         parti.x(ii) = rx1*Dx;
         
         %=================
@@ -259,12 +264,12 @@ for ii = 1:length(parti.x)
         %=== Assign z-position to particle.
         %=================
         rz1 = (rz0 + deltaz/betaz)*exp(-betaz*ds)-(deltaz/betaz);
-         if abs(rz1-rzkm1)<1e-11
-             rz1 = rzkm1;
-         elseif abs(rz1-rzk)<1e-11
-             rz1 = rzk;
-         end
-        parti.z(ii) = rz1*Dz;
+        if abs(rz1-rzkm1)<1e-11
+            rz1 = rzkm1;
+        elseif abs(rz1-rzk)<1e-11
+            rz1 = rzk;
+        end
+        parti.z(ii) = rz1*Dz + parti.wsink(ii)*intermediate_timestep;
         
         if model.periodic_ew == 1
             % Wrap the domain around if periodicity
@@ -292,5 +297,5 @@ for ii = 1:length(parti.x)
 end; clear ii
 
 disp(['Removed ',num2str(counter_remover),' particles'])
-
-clear timestep_leftover counter_remover
+close(h)
+clear timestep_leftover counter_remover h
