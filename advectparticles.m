@@ -1,6 +1,4 @@
-% This routine projects the particle forward using a 2nd order
-% Adams?Bashforth method
-% https://en.wikipedia.org/wiki/Linear_multistep_method
+% This routine projects the particle forward
 
 disp('PROJECT PARTICLE DATA... ')
 
@@ -19,7 +17,6 @@ h = waitbar(0,'Advection of particles, please wait...');
 
 counter_remover = 0;
 for ii = 1:length(parti.x)
-    disp('loopy loop?')
     waitbar(ii / length(parti.x),h,['Advection of particles, please wait... [',num2str(ii),'/',num2str(length(parti.x)),']'])
 
     % ii can be larger than length(parti.x) only because some values are
@@ -31,7 +28,6 @@ for ii = 1:length(parti.x)
     
     timestep_leftover = particle.timestep*86400;
     while timestep_leftover~=0
-        
         % Find indices of cell faces surrounding the particle
         % position in x
         face_im1 = find(model.xf<=parti.x(ii),1,'last');
@@ -216,23 +212,31 @@ for ii = 1:length(parti.x)
         if strcmp(particle.direction,'forward')
             % = NaN;
             [Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>0));
-            
             % If the shortest time it would take the particle to reach a cell face
             % is shorter than the particle tracking timestep, then the integration
             % timestep needs to be shortened
-            intermediate_timestep = min(Dtmax,particle.timestep*86400);
-            timestep_leftover = particle.timestep*86400-intermediate_timestep;
+            if isempty(Dtmax)
+                intermediate_timestep = timestep_leftover;
+            else
+                intermediate_timestep = min(Dtmax,timestep_leftover);
+            end
+            timestep_leftover = timestep_leftover-intermediate_timestep;
             ds = intermediate_timestep/(Dx*Dy*Dz);
             
             
         elseif strcmp(particle.direction,'backward')
-            Dtmax = max(Dtmaxtemp(Dtmaxtemp<0));
+            %Dtmax = max(Dtmaxtemp(Dtmaxtemp<0));
+            Dtmax = max(Dtmaxtemp(Dtmaxtemp<0 & isreal(Dtmaxtemp)==1));
             
             % If the shortest time it would take the particle to reach a cell face
             % is shorter than the particle tracking timestep, then the integration
             % timestep needs to be shortened
-            intermediate_timestep = max(Dtmax,particle.timestep*86400);
-            timestep_leftover = particle.timestep*86400-intermediate_timestep;
+            if isempty(Dtmax)
+                intermediate_timestep = timestep_leftover;
+            else
+                intermediate_timestep = max(Dtmax,timestep_leftover);
+            end
+            timestep_leftover = timestep_leftover-intermediate_timestep;
             ds = intermediate_timestep/(Dx*Dy*Dz);
             
         end
