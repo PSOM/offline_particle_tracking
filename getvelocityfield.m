@@ -56,7 +56,7 @@ for ii = 1:length(timestepind)
     % Import velocity fluxes
     model.uf(:,:,:,ii) = ncread(filename,'uf')*1e3*1e5;
     model.vf(:,:,:,ii) = ncread(filename,'vf')*1e3*1e5;
-    model.wf(:,:,:,ii) = ncread(filename,'wf')*1e5*1e5*1e-3/1e-1;
+    model.wf(:,:,:,ii) = ncread(filename,'wf')*1e3*1e5;
     
     % extract coordinate from full_* files
     filename2 = [files2(timestepind(ii)).folder,'/',files2(timestepind(ii)).name];
