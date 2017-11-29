@@ -22,6 +22,7 @@ fprintf(fileID,'%s\n',[]);
 fprintf(fileID,'%s\n','******** PARTICLE TRACKING PARAMETERS ********');
 fprintf(fileID,'%s\n',['Particle initialization (1st seeding) = Day ',num2str(particle.initime)]);
 fprintf(fileID,'%s\n',['Particle seeding frequency = every ',num2str(particle.inifreq),' day(s)']);
+fprintf(fileID,'%s\n',['Number of seeding events = ',num2str(particle.ininumber),' day(s)']);
 fprintf(fileID,'%s\n',['Timestep for particle tracking = ',num2str(particle.timestep),' day(s)']);
 fprintf(fileID,'%s\n',['Length of particle tracking simulation = ',num2str(particle.length),' day(s)']);
 fprintf(fileID,'%s\n',['Particle output frequency = ',num2str(particle.outfreq),' day(s)']);
