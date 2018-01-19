@@ -6,14 +6,14 @@ clear
 %% PARAMETERS
 
 %%%%%%%%%%%%%%%%%%%%%
-% PSOM parameters
+%% PSOM parameters
 %%%%%%%%%%%%%%%%%%%%%
 % Day of year where simulation starts
-model.start_day = 90;
+model.start_day = 1;
 % Model timestep in second (needed to convert from timestamp to DOY
 model.timestep = 432;
 % Path of folder containing model outputs
-model.path = '/Volumes/garuda/Mathieu/output_Papa1km/particle_tracking';
+model.path = '/Volumes/garuda/Mathieu/output_Papa1km/particle_tracking/';
 % constant to play with model output temporal resolution
 % "2" means every other model output file
 % "4" means every 4 model output file
@@ -25,42 +25,61 @@ model.periodic_ew = 1;
 model.periodic_ns = 0;
 
 %%%%%%%%%%%%%%%%%%%%%
-% Particle parameters
+%% Particle parameters
 %%%%%%%%%%%%%%%%%%%%%
+
+%----------------
+% SEEDING
+%----------------
 % day of year for particle initialization (i.e., first seeding)
 particle.initime = 183;
 % frequency of particles seeding (in days)
-particle.inifreq = 100;
-% timestep of particle tracking in days
-particle.timestep = 2^-5;
+particle.inifreq = 2^-2;
 % Number of seeding events
 particle.ininumber = 12;
+% Type of particle seeding ('dynamic' or 'static')
+particle.initype = 'static';
+
+% Number of particle classes to be released. Please refer to iniparticles
+% to customize the sinking velocity of each particle class
+particle.numofclasses = 4;
+
+% Parameters to customize the initialization of the particles (in meters)
+% Only applied if seeding type is 'static'
+particle.istart = 20000;
+particle.irange = 30000;
+particle.irez = 500;
+
+particle.jstart = 135000;
+particle.jrange = 50000;
+particle.jrez = 500;
+
+particle.kstart = -30;
+particle.krange = 1;
+particle.krez = 1;
+
+%----------------
+% ADVECTION
+%----------------
+% timestep of particle tracking in days
+particle.timestep = 2^-2;
 % length of particle tracking experiment in days
 particle.length = 60;
+% Define particle-tracking direction ('forward' or 'backward')
+particle.direction = 'forward';
+
+%----------------
+% OUTPUT
+%----------------
 % frequency of particles output (in days)
 particle.outfreq = 2^-2;
 % Format of output ('csv' or 'sqlite')
 particle.outputformat = 'sqlite';
-particle.outputdir = '/Users/mathieudever/Documents/EXPORTS/Particles/offline_particle_tracking/Papa_1km';
-particle.outputfilename = 'offlineparticles_6hrsPSOM_full_relax3days';
-
-% define particle-tracking direction ('forward' or 'backward')
-particle.direction = 'forward';
-
-% parameters to customize the initialization of the particles (in meters)
-particle.istart = 10000;
-particle.irange = 1000;
-particle.irez = 1000;
-particle.jstart = 100000;
-particle.jrange = 100000;
-particle.jrez = 1000;
-particle.kstart = -25;
-particle.krange = 1;
-particle.krez = 1;
-particle.numofclasses = 1;
+particle.outputdir = '/Volumes/mathieudever/Documents/EXPORTS/Particles/offline_particle_tracking/runs';
+particle.outputfilename = 'blob1release';
 
 %%%%%%%%%%%%%%%%%%%%%
-% CORE CODE
+%% CORE CODE
 %%%%%%%%%%%%%%%%%%%%%
 mytimer = tic;
 
@@ -101,8 +120,6 @@ for tt = particle.initime:particle.timestep:particle.initime+particle.length
     
     %% Seed particle when required
     
-    % If day of year matches the seeding frequency
-    if  mod(tt-particle.initime,particle.inifreq)<=1e-10
     % If day of year matches the seeding frequency (threshold is to account
     % for rouding error is inifreq is not a power of 2).
     if  mod(tt-particle.initime,particle.inifreq)<=1e-10 && particle.ininumber ~= 0
