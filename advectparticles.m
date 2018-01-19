@@ -13,12 +13,12 @@ disp('PROJECT PARTICLE DATA... ')
 %           then divide the timestep into subtimesteps
 %       - Get new particle position
 
-h = waitbar(0,'Advection of particles, please wait...');
+%h = waitbar(0,'Advection of particles, please wait...');
 
 counter_remover = 0;
 for ii = 1:length(parti.x)
-    waitbar(ii / length(parti.x),h,['Advection of particles, please wait... [',num2str(ii),'/',num2str(length(parti.x)),']'])
-
+    %waitbar(ii / length(parti.x),h,['Advection of particles, please wait... [',num2str(ii),'/',num2str(length(parti.x)),']'])
+    
     % ii can be larger than length(parti.x) only because some values are
     % removed when particles are outside of the domain. so parti.x possibly
     % changes length within the loop
@@ -37,21 +37,13 @@ for ii = 1:length(parti.x)
         face_km1 = find(model.zf<=parti.z(ii),1,'last');
         face_k = face_km1+1;
         
-        % Compute Dx
-        Dx = model.xf(face_i)-model.xf(face_im1);
-        
-        % Compute Dy
-        Dy = model.yf(face_j)-model.yf(face_jm1);
-        
-        % Compute Dz
-        Dz = model.zf(face_k)-model.zf(face_km1);
-        
-        % Correct indices if particle on a cell face. For instance, if a particle
-        % is on a cell face in x, the cell to be considered for advection is the
-        % one to the right of th particle if the face velocity is +ve, and to the
-        % left of the particle is face velocity is -ve.
-        % The cell to the right is considered by default, and this piece of code
-        % modifies this if the face velocity is negative.
+        % Correct indices if particle on a cell face. For instance, if a
+        % particle is on a cell face in x, the cell to be considered for
+        % advection is the one to the right of the particle if the face
+        % velocity is +ve, and to the left of the particle is face velocity
+        % is -ve. The cell to the right is considered by default (see
+        % above), and this piece of code modifies this if the face velocity
+        % is negative.
         
         % define direction of the tracking
         if strcmp(particle.direction,'forward')
@@ -90,12 +82,19 @@ for ii = 1:length(parti.x)
                 face_jm1,...
                 model.z(2:end-1)>=model.zf(face_km1) & model.z(2:end-1)<=model.zf(face_k))<0
             
-            % Introduce periodicity at southern boundary
-            if face_jm1 == 1 && model.periodic_ns ==1
-                % Select the last cell instead of the first one
-                face_jm1 = length(model.yf)-1;
-                face_j = length(model.yf);
-                parti.y(ii) = model.yf(face_j);
+            % If the particle is located at the very 1st cell, indices
+            % cannot be switched to the previous cell (southward).
+            if face_jm1 == 1
+                
+                % If model is periodic in y, then periodicity is introduced
+                if model.periodic_ns ==1
+                    % Select the last cell instead of the first one
+                    face_jm1 = length(model.yf)-1;
+                    face_j = length(model.yf);
+                    parti.y(ii) = model.yf(face_j);
+                else
+                end
+                
                 
                 % If not at model boundary
             else
@@ -120,6 +119,13 @@ for ii = 1:length(parti.x)
             face_k = face_k-1;
         end
         
+        % Compute Cell spacings in x, y, and z
+        % Compute Dx
+        Dx = model.xf(face_i)-model.xf(face_im1);
+        % Compute Dy
+        Dy = model.yf(face_j)-model.yf(face_jm1);
+        % Compute Dz
+        Dz = model.zf(face_k)-model.zf(face_km1);
         
         %%
         % Compute some variables in x
@@ -199,19 +205,13 @@ for ii = 1:length(parti.x)
         Dtmaxtemp(6) = -1/betaz*log((rzk + deltaz/betaz)/(rz0 + deltaz/betaz))*Dx*Dy*Dz;
         
         
-        % This bit gets rid of imaginary numbers. Imaginary times occur
-        % when the the face considered has a velocity in the opposite
-        % direction of the velocity at the particle's location. Hence the
-        % imaginary number: does not matter how long, the particle will
-        % never reach that face.
-        %         if isreal(Dtmaxtemp)==0
-        %             warning('imaginary time...')
-        %             error('blop')
-        %         end
+        % Imaginary times occur when the face considered has a velocity in
+        % the opposite direction of the velocity at the particle's
+        % location. Hence the imaginary number: does not matter how long,
+        % the particle will never reach that face.
         
         if strcmp(particle.direction,'forward')
-            % = NaN;
-            [Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>0));
+            [Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>0 & imag(Dtmaxtemp)==0));
             % If the shortest time it would take the particle to reach a cell face
             % is shorter than the particle tracking timestep, then the integration
             % timestep needs to be shortened
@@ -225,8 +225,7 @@ for ii = 1:length(parti.x)
             
             
         elseif strcmp(particle.direction,'backward')
-            %Dtmax = max(Dtmaxtemp(Dtmaxtemp<0));
-            Dtmax = max(Dtmaxtemp(Dtmaxtemp<0 & isreal(Dtmaxtemp)==1));
+            Dtmax = max(Dtmaxtemp(Dtmaxtemp<0 & imag(Dtmaxtemp)==0));
             
             % If the shortest time it would take the particle to reach a cell face
             % is shorter than the particle tracking timestep, then the integration
@@ -281,7 +280,7 @@ for ii = 1:length(parti.x)
         end
         if model.periodic_ns == 1
             % Wrap the domain around if periodicity
-            parti.x(ii) = mod(parti.x(ii),max(model.xf));
+            parti.y(ii) = mod(parti.y(ii),max(model.yf));
         end
         
         % Particles can't go airborn (z>0), and stop tracking if too deep
