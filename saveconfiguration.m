@@ -27,6 +27,7 @@ fprintf(fileID,'%s\n','%----------------');
 fprintf(fileID,'%s\n',['Particle initialization (1st seeding) = Day ',num2str(particle.initime)]);
 fprintf(fileID,'%s\n',['Particle seeding frequency = every ',num2str(particle.inifreq),' day(s)']);
 fprintf(fileID,'%s\n',['Number of seeding events = ',num2str(particle.ininumber)]);
+fprintf(fileID,'%s\n',['Type of seeding (static vs dynamic) = ',particle.initype]);
 fprintf(fileID,'%s\n',[]);
 fprintf(fileID,'%s\n',['Number of particle classes = ',num2str(particle.numofclasses)]);
 fprintf(fileID,'%s\n',[]);
