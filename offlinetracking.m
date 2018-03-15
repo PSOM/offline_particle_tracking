@@ -123,6 +123,23 @@ for tt = particle.initime:particle.timestep:particle.initime+particle.length
     % If day of year matches the seeding frequency (threshold is to account
     % for rouding error is inifreq is not a power of 2).
     if  mod(tt-particle.initime,particle.inifreq)<=1e-10 && particle.ininumber ~= 0
+
+        % If seeding is set to 'dynamic', the iniparticle routine uses the
+        % current particle position of the 1st particle to seed (at a 
+        % constant depth)
+        if strcmp(particle.initype,'dynamic') && tt ~= particle.initime
+            particle.istart = parti.x(parti.id==1);
+            particle.irange = 1;
+            particle.irez = 1;
+            
+            particle.jstart = parti.y(parti.id==1);
+            particle.jrange = 1;
+            particle.jrez = 1;
+            
+            particle.kstart = -50;
+            particle.krange = 1;
+            particle.krez = 1;
+        end
         % Seed particles
         run iniparticles
         particle.ininumber = particle.ininumber -1;
