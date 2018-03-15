@@ -16,16 +16,20 @@ disp('PROJECT PARTICLE DATA... ')
 %h = waitbar(0,'Advection of particles, please wait...');
 
 counter_remover = 0;
-for ii = 1:length(parti.x)
+end_loop = length(parti.x);
+for xx = 1:end_loop
+    ii = xx-counter_remover;
+    
     %waitbar(ii / length(parti.x),h,['Advection of particles, please wait... [',num2str(ii),'/',num2str(length(parti.x)),']'])
     
     % ii can be larger than length(parti.x) only because some values are
     % removed when particles are outside of the domain. so parti.x possibly
     % changes length within the loop
-    if ii > length(parti.x)
-        break
-    end
+    %if ii > length(parti.x)+counter_remover
+    %    break
+    %end
     
+    tStart = tic;
     timestep_leftover = particle.timestep*86400;
     while timestep_leftover~=0
         % Find indices of cell faces surrounding the particle
@@ -106,7 +110,6 @@ for ii = 1:length(parti.x)
             % particle location in y is modular of the model domain (see mod
             % function below). so when northern most cell face is reached, particle
             % location is changed to southern most cell
-            
             
         end
         
@@ -211,7 +214,8 @@ for ii = 1:length(parti.x)
         % the particle will never reach that face.
         
         if strcmp(particle.direction,'forward')
-            [Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>0 & imag(Dtmaxtemp)==0));
+            %[Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>0 & imag(Dtmaxtemp)==0));
+            [Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>1e-6 & imag(Dtmaxtemp)==0));
             % If the shortest time it would take the particle to reach a cell face
             % is shorter than the particle tracking timestep, then the integration
             % timestep needs to be shortened
@@ -295,10 +299,34 @@ for ii = 1:length(parti.x)
             break
         end
         
+        % If hits a solid boundary, kill the particle
+        if parti.y(ii)>model.yf(end) || parti.y(ii)<model.yf(1)
+            
+            thefields = fieldnames(parti);
+            for jj = 1:length(thefields)
+                eval(['parti.',thefields{jj},'(ii) = [];'])
+            end; clear jj
+            counter_remover = counter_remover + 1;
+            break
+        end
+        
+        
+        tElapsed = toc(tStart);
+        if tElapsed > 10
+            
+            thefields = fieldnames(parti);
+            for jj = 1:length(thefields)
+                eval(['parti.',thefields{jj},'(ii) = [];'])
+            end; clear jj
+            counter_remover = counter_remover + 1;
+            warning(['Time out - particule ',num2str(ii),' removed'])
+            clear tStart tElapsed
+            break
+        end
         clear thefields beta* delta* center_* face_* direction ds Dtmax Dx Dy Dz intermediate_timestep rx0 rx1 rxi rxim1 ry0 ry1 ryj ryjm1 rz0 rz1 rzk rzkm1 Dtmaxtemp
     end
 end; clear ii
 
 disp(['Removed ',num2str(counter_remover),' particles'])
-close(h)
+%close(h)
 clear timestep_leftover counter_remover h
