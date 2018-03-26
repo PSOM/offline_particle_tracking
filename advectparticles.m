@@ -29,7 +29,6 @@ for xx = 1:end_loop
     %    break
     %end
     
-    tStart = tic;
     timestep_leftover = particle.timestep*86400;
     while timestep_leftover~=0
         % Find indices of cell faces surrounding the particle
@@ -214,8 +213,7 @@ for xx = 1:end_loop
         % the particle will never reach that face.
         
         if strcmp(particle.direction,'forward')
-            %[Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>0 & imag(Dtmaxtemp)==0));
-            [Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>1e-6 & imag(Dtmaxtemp)==0));
+            [Dtmax,~] = min(Dtmaxtemp(Dtmaxtemp>0 & imag(Dtmaxtemp)==0));
             % If the shortest time it would take the particle to reach a cell face
             % is shorter than the particle tracking timestep, then the integration
             % timestep needs to be shortened
@@ -310,19 +308,6 @@ for xx = 1:end_loop
             break
         end
         
-        
-        tElapsed = toc(tStart);
-        if tElapsed > 10
-            
-            thefields = fieldnames(parti);
-            for jj = 1:length(thefields)
-                eval(['parti.',thefields{jj},'(ii) = [];'])
-            end; clear jj
-            counter_remover = counter_remover + 1;
-            warning(['Time out - particule ',num2str(ii),' removed'])
-            clear tStart tElapsed
-            break
-        end
         clear thefields beta* delta* center_* face_* direction ds Dtmax Dx Dy Dz intermediate_timestep rx0 rx1 rxi rxim1 ry0 ry1 ryj ryjm1 rz0 rz1 rzk rzkm1 Dtmaxtemp
     end
 end; clear ii
