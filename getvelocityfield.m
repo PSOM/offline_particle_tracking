@@ -76,7 +76,7 @@ for ii = 1:length(timestepind)
     model.pv(:,:,:,ii) = ncread(filename2,'pv');
     
     % Extract DOY from file name
-    model.doy(ii) = str2double(filename(end-8:end-4))*432/86400 + model.start_day;
+    model.doy(ii) = str2double(filename(end-8:end-4))*model.timestep/86400 + model.start_day;
     
 end; clear ii filename files timestepind doy files2 filename2
 
