@@ -94,7 +94,7 @@ model.yf = model.y(1:end-1)+ 0.5*(model.y(2:end)-model.y(1:end-1));
 % Import zf from zgrid.out
 filename = [model.path,'zgrid.out'];
 fileID = fopen(filename,'r');
-dataArray = textscan(fileID, '%*s%f%*s%[^\n\r]', 'Delimiter', ' ', 'MultipleDelimsAsOne', true, 'TextType', 'string', 'HeaderLines' ,36, 'ReturnOnError', false, 'EndOfLine', '\r\n');
+dataArray = textscan(fileID, '%*s%f%*s%[^\n\r]', 'Delimiter', ' ', 'MultipleDelimsAsOne', true, 'TextType', 'string', 'HeaderLines' ,length(model.z)+2, 'ReturnOnError', false, 'EndOfLine', '\r\n');
 fclose(fileID);
 model.zf = dataArray{1:end-1};
 clearvars filename dataArray ans fileID;
