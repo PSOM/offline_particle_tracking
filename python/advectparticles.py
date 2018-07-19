@@ -199,7 +199,7 @@ def advectparticles(tt,particle,model,parti):
             # the particle will never reach that face.
     #%           
             if particle.direction=='forward':
-                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].min().real
+                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].nanmin().real
                 # If the shortest time it would take the particle to reach a cell face
                 # is shorter than the particle tracking timestep, then the integration
                 # timestep needs to be shortened
@@ -213,8 +213,7 @@ def advectparticles(tt,particle,model,parti):
                 
                 
             elif particle.direction=='backward':
-                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].min().real
-                Dtmax = Dtmaxtemp[ (Dtmaxtemp<0) & (Dtmaxtemp.imag==0)].min().real
+                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].nanmin().real
                 
                 # If the shortest time it would take the particle to reach a cell face
                 # is shorter than the particle tracking timestep, then the integration
