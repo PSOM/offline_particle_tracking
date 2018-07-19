@@ -54,15 +54,15 @@ for ii = 1:length(timestepind)
     filename = [files(timestepind(ii)).folder,'/',files(timestepind(ii)).name];
     
     % Import velocity fluxes
-    model.uf(:,:,:,ii) = ncread(filename,'uf')*1e3*1e5;
-    model.vf(:,:,:,ii) = ncread(filename,'vf')*1e3*1e5;
-    model.wf(:,:,:,ii) = ncread(filename,'wf')*1e3*1e5;
+    model.uf(:,:,:,ii) = ncread(filename,'uf');%*1e3*1e5;
+    model.vf(:,:,:,ii) = ncread(filename,'vf');%*1e3*1e5;
+    model.wf(:,:,:,ii) = ncread(filename,'wf');%*1e3*1e5;
     
     % extract coordinate from full_* files
     filename2 = [files2(timestepind(ii)).folder,'/',files2(timestepind(ii)).name];
     model.x = ncread(filename2,'xc')*1000;
     model.y = ncread(filename2,'yc')*1000;
-    model.z = ncread(filename2,'zc')*1000;
+    model.z = ncread(filename2,'zc');%*1000;
     model.z = squeeze(model.z(1,1,:));
     
     % Import variables
@@ -71,7 +71,7 @@ for ii = 1:length(timestepind)
     model.S(:,:,:,ii) = ncread(filename2,'s');
     model.u(:,:,:,ii) = ncread(filename2,'u');
     model.v(:,:,:,ii) = ncread(filename2,'v');
-    model.w(:,:,:,ii) = ncread(filename2,'w')/1000;
+    model.w(:,:,:,ii) = ncread(filename2,'w');%/1000;
     model.vor(:,:,:,ii) = ncread(filename2,'vor');
     model.pv(:,:,:,ii) = ncread(filename2,'pv');
     

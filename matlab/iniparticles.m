@@ -26,7 +26,7 @@ if tt == particle.initime
 end
 
 % Number of particle to seed
-nprtoseed = (particle.irange/particle.irez)*(particle.jrange/particle.jrez)*(particle.krange/particle.krez)*particle.numofclasses;
+nprtoseed = floor((particle.irange/particle.irez)+1)*floor((particle.jrange/particle.jrez)+1)*floor((particle.krange/particle.krez)+1)*particle.numofclasses;
 disp(['Seeding ',num2str(nprtoseed),' particles'])
 
 % Particle day of year
@@ -40,11 +40,20 @@ parti.id = cat(1,parti.id,blop'); clear blop
 for theclass = 1:particle.numofclasses
     % Particle seeding location
     [x,y,z] = meshgrid(particle.istart:particle.irez:particle.istart + ...
-        particle.irange-particle.irez,...
+        particle.irange,...
         particle.jstart:particle.jrez:particle.jstart + ...
-        particle.jrange-particle.jrez,...
+        particle.jrange,...
         particle.kstart:particle.krez:particle.kstart + ...
-        particle.krange-particle.krez);
+        particle.krange);
+    
+    % Check particles are seeded within the domain
+    if isempty(find(x(:)<min(model.xf) | x(:)>max(model.xf),1)) ~=1
+        error('Particle seeded outside of the model domain (in x)')
+    elseif isempty(find(y(:)<min(model.yf) | y(:)>max(model.yf),1)) ~=1
+        error('Particle seeded outside of the model domain (in y)')
+    elseif isempty(find(z(:)<min(model.zf) | z(:)>max(model.zf),1)) ~=1
+        error('Particle seeded outside of the model domain (in z)')
+    end
     
     parti.x = cat(1,parti.x,x(:));
     parti.y = cat(1,parti.y,y(:));
@@ -52,7 +61,7 @@ for theclass = 1:particle.numofclasses
     clear x y z
     % Prescribe sinking velocity (in m/s)
     if theclass == 1
-        parti.wsink = cat(1,parti.wsink,zeros(nprtoseed/particle.numofclasses,1));
+        parti.wsink = cat(1,parti.wsink,0/86400*ones(nprtoseed/particle.numofclasses,1));
     elseif theclass == 2
         parti.wsink = cat(1,parti.wsink,-1/86400*ones(nprtoseed/particle.numofclasses,1));
     elseif theclass == 3

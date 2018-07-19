@@ -9,11 +9,11 @@ clear
 %% PSOM parameters
 %%%%%%%%%%%%%%%%%%%%%
 % Day of year where simulation starts
-model.start_day = 1;
+model.start_day = 0;
 % Model timestep in second (needed to convert from timestamp to DOY
-model.timestep = 432;
+model.timestep = 216;
 % Path of folder containing model outputs
-model.path = '/Volumes/garuda/Mathieu/output_Papa1km/particle_tracking/';
+model.path = '/Volumes/garuda-1/Mathieu/output_Papa_Dx=500_from_1km/K1/highrez/';
 % constant to play with model output temporal resolution
 % "2" means every other model output file
 % "4" means every 4 model output file
@@ -32,39 +32,39 @@ model.periodic_ns = 0;
 % SEEDING
 %----------------
 % day of year for particle initialization (i.e., first seeding)
-particle.initime = 183;
+particle.initime = 60.5;
 % frequency of particles seeding (in days)
 particle.inifreq = 2^-2;
 % Number of seeding events
-particle.ininumber = 12;
+particle.ininumber = 1;
 % Type of particle seeding ('dynamic' or 'static')
 particle.initype = 'static';
 
 % Number of particle classes to be released. Please refer to iniparticles
 % to customize the sinking velocity of each particle class
-particle.numofclasses = 4;
+particle.numofclasses = 1;
 
 % Parameters to customize the initialization of the particles (in meters)
 % Only applied if seeding type is 'static'
-particle.istart = 20000;
-particle.irange = 30000;
-particle.irez = 500;
+particle.istart = 50000;
+particle.irange = 1000;
+particle.irez = 2000;
 
-particle.jstart = 135000;
-particle.jrange = 50000;
-particle.jrez = 500;
+particle.jstart = 150000;
+particle.jrange = 1000;
+particle.jrez = 2000;
 
-particle.kstart = -30;
+particle.kstart = -10;
 particle.krange = 1;
-particle.krez = 1;
+particle.krez = 3;
 
 %----------------
 % ADVECTION
 %----------------
 % timestep of particle tracking in days
-particle.timestep = 2^-2;
+particle.timestep = 2^-4;
 % length of particle tracking experiment in days
-particle.length = 60;
+particle.length = 5;
 % Define particle-tracking direction ('forward' or 'backward')
 particle.direction = 'forward';
 
@@ -72,11 +72,11 @@ particle.direction = 'forward';
 % OUTPUT
 %----------------
 % frequency of particles output (in days)
-particle.outfreq = 2^-2;
+particle.outfreq = 2^-3;
 % Format of output ('csv' or 'sqlite')
 particle.outputformat = 'sqlite';
-particle.outputdir = '/Volumes/mathieudever/Documents/EXPORTS/Particles/offline_particle_tracking/runs';
-particle.outputfilename = 'blob1release';
+particle.outputdir = '/Users/mathieudever/Desktop/particle_test/MATLAB';
+particle.outputfilename = 'matlab_test_1parti_nopara';
 
 %%%%%%%%%%%%%%%%%%%%%
 %% CORE CODE
@@ -161,6 +161,7 @@ for tt = particle.initime:particle.timestep:particle.initime+particle.length
     %% Advect particles forward in time if forward particle tracking
     
     if strcmp(particle.direction,'forward')
+        %run advectparticles_parallel
         run advectparticles
     end
     
