@@ -161,8 +161,8 @@ for tt = particle.initime:particle.timestep:particle.initime+particle.length
     %% Advect particles forward in time if forward particle tracking
     
     if strcmp(particle.direction,'forward')
-        %run advectparticles_parallel
-        run advectparticles
+        run advectparticles_parallel
+        %run advectparticles
     end
     
     %% Displays some info to user

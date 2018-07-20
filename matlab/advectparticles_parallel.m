@@ -24,6 +24,9 @@ partiy = parti.y;
 partiz = parti.z;
 
 parfor ii = 1:length(partix)
+    
+    %disp(['ii = ',num2str(ii)])
+    
     timestep_leftover = particle.timestep*86400;
     while timestep_leftover~=0
         % Find indices of cell faces surrounding the particle
@@ -60,7 +63,7 @@ parfor ii = 1:length(partix)
         
         if partix(ii)-model.xf(face_im1) == 0 &&...
                 direction*model.uf(face_im1,indyf,indzf)<0
-            disp('block A')
+            % disp('block A')
             % Introduce periodicity at western boundary
             if face_im1 == 1 && model.periodic_ew ==1
                 % Select the last cell instead of the first one
@@ -83,7 +86,7 @@ parfor ii = 1:length(partix)
         
         if partiy(ii)-model.yf(face_jm1) == 0 &&...
                 direction*model.vf(indxf,face_jm1,indzf)<0
-            disp('block B')            
+            % disp('block B')            
             % If the particle is located at the very 1st cell, indices
             % cannot be switched to the previous cell (southward).
             if face_jm1 == 1
@@ -113,7 +116,7 @@ parfor ii = 1:length(partix)
         
         if partiz(ii)-model.zf(face_km1) == 0 &&...
                 direction*model.wf(indxf,indyf,face_km1)<0
-            disp('block C')            
+            % disp('block C')            
             face_km1 = face_km1-1;
             face_k = face_k-1;
         end
