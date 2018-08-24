@@ -164,25 +164,44 @@ parfor ii = 1:length(partix)
         
         %% Compute the shortest time it would take the particle to reach one of the
         % cell faces
+       
+        % If no velocity gradient (i.e. beta == 0), the solution to the
+        % differential equation changes, hence the if-loop
+        if betax == 0
+            % time to reach i-1 th face
+            Dtmaxtemp1 = (rxim1-rx0)./model.uf(face_im1,indyf,indzf).*Dx.*Dy.*Dz;
+            % time to reach i th face
+            Dtmaxtemp2 = (rxi-rx0)./model.uf(face_im1,indyf,indzf).*Dx.*Dy.*Dz;
+        else
+            % time to reach i-1 th face
+            Dtmaxtemp1 = -1/betax*log((rxim1 + deltax/betax)/(rx0 + deltax/betax))*Dx*Dy*Dz;
+            % time to reach i th face
+            Dtmaxtemp2 = -1/betax*log((rxi + deltax/betax)/(rx0 + deltax/betax))*Dx*Dy*Dz;
+        end
         
-        % time to reach i-1 th face
-        %Dtmaxtemp(1) = -1/betax*log((rxim1 + deltax/betax)/(rx0 + deltax/betax))*Dx*Dy*Dz;
-        Dtmaxtemp1 = -1/betax*log((rxim1 + deltax/betax)/(rx0 + deltax/betax))*Dx*Dy*Dz;
-        % time to reach i th face
-        %Dtmaxtemp(2) = -1/betax*log((rxi + deltax/betax)/(rx0 + deltax/betax))*Dx*Dy*Dz;
-        Dtmaxtemp2 = -1/betax*log((rxi + deltax/betax)/(rx0 + deltax/betax))*Dx*Dy*Dz;
-        % time to reach j-1 th face
-        %Dtmaxtemp(3) = -1/betay*log((ryjm1 + deltay/betay)/(ry0 + deltay/betay))*Dx*Dy*Dz;
-        Dtmaxtemp3 = -1/betay*log((ryjm1 + deltay/betay)/(ry0 + deltay/betay))*Dx*Dy*Dz;
-        % time to reach j th face
-        %Dtmaxtemp(4) = -1/betay*log((ryj + deltay/betay)/(ry0 + deltay/betay))*Dx*Dy*Dz;
-        Dtmaxtemp4 = -1/betay*log((ryj + deltay/betay)/(ry0 + deltay/betay))*Dx*Dy*Dz;
-        % time to reach k-1 th face
-        %Dtmaxtemp(5) = -1/betaz*log((rzkm1 + deltaz/betaz)/(rz0 + deltaz/betaz))*Dx*Dy*Dz;
-        Dtmaxtemp5 = -1/betaz*log((rzkm1 + deltaz/betaz)/(rz0 + deltaz/betaz))*Dx*Dy*Dz;
-        % time to reach j th face
-        %Dtmaxtemp(6) = -1/betaz*log((rzk + deltaz/betaz)/(rz0 + deltaz/betaz))*Dx*Dy*Dz;
-        Dtmaxtemp6 = -1/betaz*log((rzk + deltaz/betaz)/(rz0 + deltaz/betaz))*Dx*Dy*Dz;
+        if betay == 0
+            % time to reach j-1 th face
+            Dtmaxtemp3 = (ryjm1-ry0)./model.vf(indxf,face_jm1,indzf)*Dx*Dy*Dz;
+            % time to reach j th face
+            Dtmaxtemp4 = (ryj-ry0)./model.vf(indxf,face_jm1,indzf)*Dx*Dy*Dz;
+        else
+            % time to reach j-1 th face
+            Dtmaxtemp3 = -1/betay*log((ryjm1 + deltay/betay)/(ry0 + deltay/betay))*Dx*Dy*Dz;
+            % time to reach j th face
+            Dtmaxtemp4 = -1/betay*log((ryj + deltay/betay)/(ry0 + deltay/betay))*Dx*Dy*Dz;
+        end
+        
+        if betaz == 0
+            % time to reach k-1 th face
+            Dtmaxtemp5 = (rzkm1-rz0)./model.wf(indxf,indyf,face_km1)*Dx*Dy*Dz;
+            % time to reach j th face
+            Dtmaxtemp6 = (rzk-rz0)./model.wf(indxf,indyf,face_km1)*Dx*Dy*Dz;
+        else
+            % time to reach k-1 th face
+            Dtmaxtemp5 = -1/betaz*log((rzkm1 + deltaz/betaz)/(rz0 + deltaz/betaz))*Dx*Dy*Dz;
+            % time to reach j th face
+            Dtmaxtemp6 = -1/betaz*log((rzk + deltaz/betaz)/(rz0 + deltaz/betaz))*Dx*Dy*Dz;
+        end
         
         Dtmaxtemp = cat(1,Dtmaxtemp1,Dtmaxtemp2,Dtmaxtemp3,Dtmaxtemp4,Dtmaxtemp5,Dtmaxtemp6);
         
@@ -224,7 +243,13 @@ parfor ii = 1:length(partix)
         %=================
         %=== Assign x-position to particle.
         %=================
-        rx1 = (rx0 + deltax/betax)*exp(-betax*ds)-(deltax/betax);
+        % If no velocity gradient (i.e. beta == 0), the solution to the
+        % differential equation changes, hence the if-loop
+        if betax == 0
+            rx1 = rx0 + model.uf(face_im1,indyf,indzf)*ds;
+        else
+            rx1 = (rx0 + deltax/betax)*exp(-betax*ds)-(deltax/betax);
+        end
         % If particle is really close to boundary, then particle is
         % assigned the boundary value.
         if abs(rx1-rxim1)<1e-11
@@ -241,7 +266,13 @@ parfor ii = 1:length(partix)
         %=================
         %=== Assign y-position to particle.
         %=================
-        ry1 = (ry0 + deltay/betay)*exp(-betay*ds)-(deltay/betay);
+        % If no velocity gradient (i.e. beta == 0), the solution to the
+        % differential equation changes, hence the if-loop
+        if betay == 0
+            ry1 = ry0 + model.vf(indxf,face_jm1,indzf)*ds;
+        else
+            ry1 = (ry0 + deltay/betay)*exp(-betay*ds)-(deltay/betay);
+        end
         % If particle is really close to boundary, then particle is
         % assigned the boundary value.
         if abs(ry1-ryjm1)<1e-11
@@ -258,8 +289,13 @@ parfor ii = 1:length(partix)
         %=================
         %=== Assign z-position to particle.
         %=================
-        rz1 = (rz0 + deltaz/betaz)*exp(-betaz*ds)-(deltaz/betaz);
-        
+        % If no velocity gradient (i.e. beta == 0), the solution to the
+        % differential equation changes, hence the if-loop
+        if betaz == 0
+            rz1 = rz0 + model.wf(indxf,indyf,face_km1)*ds;
+        else
+            rz1 = (rz0 + deltaz/betaz)*exp(-betaz*ds)-(deltaz/betaz);
+        end        
         % If particle is really close to boundary, then particle is
         % assigned the boundary value.
         if abs(rz1-rzkm1)<1e-11
@@ -294,8 +330,8 @@ parfor ii = 1:length(partix)
         end
         
         % If hits a solid boundary, kill the particle
-        if partiy(ii)>model.yf(end) || partiy(ii)<model.yf(1)
-            error('Particle removed at boundary!')
+        if partiy(ii)>=model.yf(end) || partiy(ii)<=model.yf(1)
+            disp('Particle removed at boundary!')
             partix(ii) = NaN;
             partiy(ii) = NaN;
             partiz(ii) = NaN;

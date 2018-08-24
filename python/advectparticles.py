@@ -25,12 +25,12 @@ def advectparticles(tt,particle,model,parti):
     import numpy as np
     
     print('PROJECT PARTICLE DATA... ')    
-  
-    for ii in range(0,len(parti.x)):        
+    counter_remover = 0
+
+    for ii in range(0,len(parti.x)):
+        #ii = xx - counter_remover
         timestep_leftover = particle.timestep*86400
         while timestep_leftover!=0:
-            #print(timestep_leftover)
-            #%% THIS SECTION IDENTIFIES THE PROPER MODEL CELL TO BE USED FOR ADVECTION
             
             # Find indices of cell faces surrounding the particle
             # position in x
@@ -49,7 +49,9 @@ def advectparticles(tt,particle,model,parti):
             model_km1 = model['zf'][face_km1]
             model_k = model['zf'][face_k]
             
-    
+            # These are the conditional indexing used for every face velocity.
+            # conditional indexing is time consuming so indices are identified
+            # separately and once.
             i1 = np.where((model['x'][1:-1]>=model_im1) & \
                           (model['x'][1:-1]<=model_i))[0][0]            
             i2 = np.where((model['y'][1:-1]>=model_jm1) & \
@@ -78,7 +80,7 @@ def advectparticles(tt,particle,model,parti):
             if direction*(model['uf'][face_im1,i2,i3])<0:
                 if parti.at[ii,'x']-model_im1 == 0:
                 
-                    print('block A') 
+                    #print('block A') 
                 # Introduce periodicity at western boundary
                     if face_im1 == 0 and model.periodic_ew ==1:
                     # Select the last cell instead of the first one
@@ -100,7 +102,7 @@ def advectparticles(tt,particle,model,parti):
             if direction*model['vf'][i1,face_jm1,i3]<0: 
                 if parti.at[ii,'y']-model_jm1 == 0:
                 
-                    print('block B') 
+                    #print('block B') 
                 # If the particle is located at the very 1st cell, indices
                 # cannot be switched to the previous cell (southward).
                     if face_jm1 == 0:
@@ -124,7 +126,7 @@ def advectparticles(tt,particle,model,parti):
             if direction*model['wf'][i1,i2,face_km1]<0:
                 if parti.at[ii,'z']-model_km1 == 0:
                 
-                    print('block C') 
+                    #print('block C') 
                     face_km1 = face_km1-1
                     face_k = face_k-1
             
@@ -144,7 +146,6 @@ def advectparticles(tt,particle,model,parti):
             i3 = np.where((model['z'][1:-1]>=model_km1) & \
                           (model['z'][1:-1]<=model_k))[0][0]
             
-            #%%
             # Compute Cell spacings in x, y, and z
             # Compute Dx,Dy,Dz
             Dx = model_i-model_im1
@@ -175,31 +176,56 @@ def advectparticles(tt,particle,model,parti):
             ## Compute the shortest time it would take the particle to reach one of the
             # cell faces
             
-            # time to reach i-1 th face
             Dtmaxtemp = np.zeros(6,dtype='complex64')
-            invbetax = 1/betax
-            invbetay = 1/betay
-            invbetaz = 1/betaz
-            
-            Dtmaxtemp[0] = -invbetax*np.log((rxim1 + deltax*invbetax)/(rx0 + deltax*invbetax))*Dx*Dy*Dz
-            # time to reach i th face
-            Dtmaxtemp[1] = -invbetax*np.log((rxi + deltax*invbetax)/(rx0 + deltax*invbetax))*Dx*Dy*Dz
-            # time to reach j-1 th face
-            Dtmaxtemp[2] = -invbetay*np.log((ryjm1 + deltay*invbetay)/(ry0 + deltay*invbetay))*Dx*Dy*Dz
-            # time to reach j th face
-            Dtmaxtemp[3] = -invbetay*np.log((ryj + deltay*invbetay)/(ry0 + deltay*invbetay))*Dx*Dy*Dz
-            # time to reach k-1 th face
-            Dtmaxtemp[4] = -invbetaz*np.log((rzkm1 + deltaz*invbetaz)/(rz0 + deltaz*invbetaz))*Dx*Dy*Dz
-            # time to reach j th face
-            Dtmaxtemp[5] = -invbetaz*np.log((rzk + deltaz*invbetaz)/(rz0 + deltaz*invbetaz))*Dx*Dy*Dz
-            
+
+            # If no velocity gradient (i.e. beta == 0), the solution to the
+            # differential equation changes, hence the if-loop
+            if betax == 0:
+                invuf = 1/model['uf'][face_im1,i2,i3]
+                # time to reach i-1 th face            
+                Dtmaxtemp[0] = (rxim1-rx0)*invuf*Dx*Dy*Dz
+                # time to reach i th face
+                Dtmaxtemp[1] = (rxi-rx0)*invuf*Dx*Dy*Dz
+            else:
+                invbetax = 1/betax
+                # time to reach i-1 th face
+                Dtmaxtemp[0] = -invbetax*np.log((rxim1 + deltax*invbetax)/(rx0 + deltax*invbetax))*Dx*Dy*Dz
+                # time to reach i th face
+                Dtmaxtemp[1] = -invbetax*np.log((rxi + deltax*invbetax)/(rx0 + deltax*invbetax))*Dx*Dy*Dz
+                
+            if betay == 0:
+                invvf = 1/model['vf'][i1,face_jm1,i3]
+                # time to reach j-1 th face
+                Dtmaxtemp[2] = (ryjm1-ry0)*invvf*Dx*Dy*Dz
+                # time to reach j th face
+                Dtmaxtemp[3] = (ryj-ry0)*invvf*Dx*Dy*Dz
+            else:
+                # time to reach j-1 th face
+                invbetay = 1/betay
+                Dtmaxtemp[2] = -invbetay*np.log((ryjm1 + deltay*invbetay)/(ry0 + deltay*invbetay))*Dx*Dy*Dz
+                # time to reach j th face
+                Dtmaxtemp[3] = -invbetay*np.log((ryj + deltay*invbetay)/(ry0 + deltay*invbetay))*Dx*Dy*Dz
+
+            if betaz == 0:
+                invwf = 1/model['wf'][i1,i2,face_km1]
+                # time to reach k-1 th face
+                Dtmaxtemp[4] = (rzkm1-rz0)*invwf*Dx*Dy*Dz
+                # time to reach j th face
+                Dtmaxtemp[5] = (rzk-rz0)*invwf*Dx*Dy*Dz
+            else:
+                invbetaz = 1/betaz
+                # time to reach k-1 th face
+                Dtmaxtemp[4] = -invbetaz*np.log((rzkm1 + deltaz*invbetaz)/(rz0 + deltaz*invbetaz))*Dx*Dy*Dz
+                # time to reach j th face
+                Dtmaxtemp[5] = -invbetaz*np.log((rzk + deltaz*invbetaz)/(rz0 + deltaz*invbetaz))*Dx*Dy*Dz
+                        
             # Imaginary times occur when the face considered has a velocity in
             # the opposite direction of the velocity at the particle's
             # location. Hence the imaginary number: does not matter how long,
             # the particle will never reach that face.
     #%           
             if particle.direction=='forward':
-                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].nanmin().real
+                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].min().real
                 # If the shortest time it would take the particle to reach a cell face
                 # is shorter than the particle tracking timestep, then the integration
                 # timestep needs to be shortened
@@ -213,7 +239,7 @@ def advectparticles(tt,particle,model,parti):
                 
                 
             elif particle.direction=='backward':
-                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].nanmin().real
+                Dtmax = Dtmaxtemp[ (Dtmaxtemp>0) & (Dtmaxtemp.imag==0)].min().real
                 
                 # If the shortest time it would take the particle to reach a cell face
                 # is shorter than the particle tracking timestep, then the integration
@@ -229,7 +255,13 @@ def advectparticles(tt,particle,model,parti):
             #=================
             #=== Assign x-position to particle.
             #=================
-            rx1 = (rx0 + deltax*invbetax)*np.exp(-betax*ds)-(deltax*invbetax)
+            # If no velocity gradient (i.e. beta == 0), the solution to the
+            # differential equation changes, hence the if-loop
+            if betax == 0:
+                rx1 = rx0 + model['uf'][face_im1,i2,i3]*ds;
+            else:
+                rx1 = (rx0 + deltax*invbetax)*np.exp(-betax*ds)-(deltax*invbetax)
+
             if abs(rx1-rxim1)<1e-11:
                 parti.at[ii,'x'] = model_im1
             elif abs(rx1-rxi)<1e-11:
@@ -240,7 +272,13 @@ def advectparticles(tt,particle,model,parti):
             #=================
             #=== Assign y-position to particle.
             #=================
-            ry1 = (ry0 + deltay*invbetay)*np.exp(-betay*ds)-(deltay*invbetay)
+            # If no velocity gradient (i.e. beta == 0), the solution to the
+            # differential equation changes, hence the if-loop
+            if betay == 0:
+                ry1 = ry0 + model['vf'][i1,face_jm1,i3]*ds;
+            else:
+                ry1 = (ry0 + deltay*invbetay)*np.exp(-betay*ds)-(deltay*invbetay)
+
             if abs(ry1-ryjm1)<1e-11:
                 parti.at[ii,'y'] = model_jm1
             elif abs(ry1-ryj)<1e-11:
@@ -251,7 +289,13 @@ def advectparticles(tt,particle,model,parti):
             #=================
             #=== Assign z-position to particle.
             #=================
-            rz1 = (rz0 + deltaz*invbetaz)*np.exp(-betaz*ds)-(deltaz*invbetaz)
+            # If no velocity gradient (i.e. beta == 0), the solution to the
+            # differential equation changes, hence the if-loop
+            if betaz == 0:
+                rz1 = rz0 + model['wf'][i1,i2,face_km1]*ds;
+            else:
+                rz1 = (rz0 + deltaz*invbetaz)*np.exp(-betaz*ds)-(deltaz*invbetaz)
+
             if abs(rz1-rzkm1)<1e-11:
                 parti.at[ii,'z'] = model_km1
             elif abs(rz1-rzk)<1e-11:
@@ -268,17 +312,24 @@ def advectparticles(tt,particle,model,parti):
                 parti.at[ii,'y'] = parti.at[ii,'y'] % model['yf'].max()
             
             # Particles can't go airborn (z>0), and stop tracking if too deep
-            #if parti.at[ii,'z']>0:
-            #    parti.at[ii,'z'] = 0
-            #elif parti.at[ii,'z']<model['zf'].min():
-            #    parti.drop(parti.index[ii],inplace=True)
-            #    counter_remover = counter_remover + 1
-            #    break
+            if parti.at[ii,'z']>0:
+                parti.at[ii,'z'] = 0
+            elif parti.at[ii,'z']<model['zf'].min():
+                parti.at[ii,'z'] = float('nan')
+                #parti.drop(parti.index[ii],inplace=True)
+                counter_remover = counter_remover + 1
+                break
             
             # If hits a solid boundary, kill the particle
-            #if parti.at[ii,'y']>model['yf'][-1] or parti.at[ii,'y']<model['yf'][0]:
-            #    parti.drop(parti.index[ii],inplace=True)
-            #    counter_remover = counter_remover + 1
-            #    break
+            if parti.at[ii,'y']>=model['yf'][-1] or parti.at[ii,'y']<=model['yf'][0]:
+                parti.at[ii,'y'] = float('nan')
+                #parti.drop(parti.index[ii],inplace=True)
+                counter_remover = counter_remover + 1
+                break
+
+    parti = parti.dropna()
+    print('Removed %f particles' % counter_remover)
 
     return parti
+    
+    

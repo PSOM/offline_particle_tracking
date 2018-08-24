@@ -10,7 +10,7 @@ def saveparti(tt,particle,parti):
     """
     import os
     from sqlalchemy import create_engine
-    
+  
     parti2 = parti.copy()
     parti2.columns = ['DOY', 'ID','x','y','z','u','v','w','wsink','wtotal','salinity','temperature','density','PV','vorticity']
     
@@ -40,14 +40,13 @@ def saveparti(tt,particle,parti):
         # Set database filename
         DBFILENAME = os.path.join(particle.outputdir,particle.outputfilename+'_'+particle.direction+'.db')
         # Set database table name
-        tablename = 'particles'
-        
-    
+        tablename = 'particles'        
+
         # Creates the SQLite database if does not exist
         engine =  create_engine('sqlite:///'+DBFILENAME, echo=False)
         # Creates the table in the database
         
-        parti2.to_sql(tablename, con=engine,if_exists='append',index=False)
+        parti2.to_sql(tablename, con=engine,if_exists='append',index=False,chunksize=10000)
     
         # Close connection
         engine.dispose()
