@@ -59,7 +59,7 @@ def iniparticles(tt,particle,parti):
         elif theclass == 3:
             wsinktemp = np.append(wsinktemp,-50/86400*np.ones((nprtoseed//particle.numofclasses,1)))
         else:
-            print('blop') 
+            print('non-defined sinkinge velocity class') 
             sys.exit(0)
             
     seeding['x'] = xtemp        

@@ -19,8 +19,13 @@ from iniparticles import iniparticles
 from getpartivar import getpartivar
 from saveparti import saveparti
 from advectparticles import advectparticles
+from advectparticles_parallel import advectparticles_parallel
+import sys
+sys.path.insert(0, 'testcase')
+from myvelocityfield import myvelocityfield
 import datetime
-import multiprocessing
+from joblib import Parallel, delayed
+#import multiprocessing
 
 ## PARAMETERS
 #
@@ -123,7 +128,7 @@ saveconfiguration(model,particle)
 Titer = np.arange(particle.initime,particle.initime+particle.length+particle.timestep,particle.timestep).size
 
 # Main Loop
-for tt in np.arange(particle.initime,particle.initime+particle.length,particle.timestep):
+for tt in np.arange(particle.initime,particle.initime+particle.length+particle.timestep,particle.timestep):
     print('\n')
     print('%2.2f %% DONE (doy %d)' %( (tt-particle.initime)/(particle.length)*100,tt) ) 
     
@@ -134,6 +139,10 @@ for tt in np.arange(particle.initime,particle.initime+particle.length,particle.t
     # already interpolated onto the time step
     model = getvelocityfield(model,tt)
    
+
+    ## Uncomment to run test case with homogeneous flow
+    model  = myvelocityfield(model)
+    
     ## Advect particles backward in time if backward particle tracking
     
     # Skip a time step in the case of backward particle tracking. this
@@ -195,8 +204,21 @@ for tt in np.arange(particle.initime,particle.initime+particle.length,particle.t
     
     ## Advect particles forward in time if forward particle tracking
     if particle.direction=='forward':
-        parti = advectparticles(tt,particle,model,parti)
-    
+        
+        ## Unparallel advection
+        #parti = advectparticles(tt,particle,model,parti)
+
+        ## Parallel advection
+        print('PROJECT PARTICLE DATA... ')
+        Parallel(n_jobs=8, prefer="threads")(delayed(advectparticles_parallel)(ii,parti,particle.timestep,particle.direction,model) for ii in range(0,len(parti.x)))
+        print('Removed %d particles' % np.count_nonzero(parti.isnull()))
+        if np.count_nonzero(parti.isnull()) == parti.shape[0]:
+            print('END-OF-RUN No particle left to track')
+            parti = parti.dropna()
+            exit(0)
+        else:
+            parti = parti.dropna()
+
     ## printlays some info to user
     
     # End timer
