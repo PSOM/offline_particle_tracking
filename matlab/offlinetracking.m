@@ -105,6 +105,10 @@ for tt = particle.initime:particle.timestep:particle.initime+particle.length
 
     run getvelocityfield
     
+    % Uncomment to run test case with homogeneous flow
+    % run testcase/myvelocityfield
+    
+    
     %% Advect particles backward in time if backward particle tracking
     
     % Skip a time step in the case of backward particle tracking. this
