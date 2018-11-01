@@ -66,7 +66,7 @@ def getvelocityfield(model,tt):
     model['x'] = ds_full['xc'][0,:].values*1e3
     model['y'] = ds_full['yc'][0,:].values*1e3
     #ds_full['w'] = ds_full['w']*1e-3
-    ds_full['z'] = ds_full['zc'] # watch out maybe needs to be scales!
+    ds_full['z'] = ds_full['zc'] # watch out maybe needs to be scaled!
     model['z'] = ds_full['z'][0,:,0,0].squeeze().values
     
     # Interpolate linearly in time the velocity field

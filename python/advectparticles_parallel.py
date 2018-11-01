@@ -80,7 +80,7 @@ def advectparticles_parallel(ii,parti,thetimestep,thedirection,model):
             
                 #print('block A') 
             # Introduce periodicity at western boundary
-                if face_im1 == 0 and model.periodic_ew ==1:
+                if face_im1 == 0 and model['periodic_ew'] ==1:
                 # Select the last cell instead of the first one
                     face_im1 = len(model['xf'])-2
                     face_i = len(model['xf'])-1
