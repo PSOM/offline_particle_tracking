@@ -1,138 +1,49 @@
 """
 This routine conducts offline particle tracking based on imported 3D velocity field.
 
-
-
-To Do
---------
-4) translate advectparticles
-
-5) Translate backward tracking.
-6) Translate dynamic seeding
 """
 
+# python packages
+import os,sys
 import pandas as pd
 import numpy as np
-from saveconfiguration import saveconfiguration
-from getvelocityfield import getvelocityfield
-from iniparticles import iniparticles
-from getpartivar import getpartivar
-from saveparti import saveparti
-from advectparticles import advectparticles
-import datetime
-import multiprocessing
+import xarray as xr
+import dask.dataframe as dd
+from time import time
+import warnings
 
-## PARAMETERS
-#
-model = {} # create pandas Series object
-#####################
-## PSOM parameters
-#####################
-# Day of year where simulation starts
-model['start_day'] = 0 
-# Model timestep in second (needed to convert from timestamp to DOY
-model['timestep'] = 216 
-# Path of folder containing model outputs
-#model['path'] = '/Volumes/garuda/Mathieu/output_Papa1km/particle_tracking/' 
-model['path'] = '/Volumes/garuda-1/Mathieu/output_Papa_Dx=500_from_1km/K1/highrez/' 
-# constant to play with model output temporal resolution
-# "2" means every other model output file
-# "4" means every 4 model output file
-# "1" means every file
-model['outputskip'] = 1 
+# custom functions
+from initialize_comm import __initialize__
+from particle_tracking.model_module import *
+from particle_tracking.parti_module import *
+# select initialization file for your experiment:
+from particle_tracking.initialize import initialize_experiment00 as __initialize__
 
-# Define periodicities in model domain
-model['periodic_ew'] = 1 
-model['periodic_ns'] = 0 
+# start timer for full script
+time_total = time()
 
-#####################
-## Particle parameters
-#####################
-
-#----------------
-# SEEDING
-#----------------
-particle = pd.DataFrame([])# create pandas Series object
-
-# day of year for particle initialization (i.e., first seeding)
-particle.initime = 60.5
-# frequency of particles seeding (in days)
-particle.inifreq = 2**-2 
-# Number of seeding events
-particle.ininumber = 1
-# Type of particle seeding ('dynamic' or 'static')
-particle.initype = 'static' 
-
-# Number of particle classes to be released. Please refer to iniparticles
-# to customize the sinking velocity of each particle class
-particle.numofclasses = 1
-
-# Parameters to customize the initialization of the particles (in meters)
-# Only applied if seeding type is 'static'
-particle.istart = 50000
-particle.irange = 1000
-particle.irez = 2000
-
-particle.jstart = 150000
-particle.jrange = 1000
-particle.jrez = 2000
-
-particle.kstart = -10
-particle.krange = 1
-particle.krez = 3
-
-#----------------
-# ADVECTION
-#----------------
-# timestep of particle tracking in days
-particle.timestep = 2**-4
-# length of particle tracking experiment in days
-particle.length = 5
-# Define particle-tracking direction ('forward' or 'backward')
-particle.direction = 'forward' 
-
-#----------------
-# OUTPUT
-#----------------
-# frequency of particles output (in days)
-particle.outfreq = 2**-3
-# Format of output ('csv' or 'sqlite')
-particle.outputformat = 'sqlite' 
-
-particle.outputdir = '/Users/mathieudever/Desktop/particle_test/PYTHON' 
-particle.outputfilename = 'pyton_test_1parti' 
-
-
-#####################
-## CORE CODE
-#####################
-time_total = datetime.datetime.now()
-
-# Change a few things if backward-tracking
-if particle.direction=='backward':
-    particle.timestep = -particle.timestep
-    particle.length = -particle.length
+# set parameters in model and particle
+model, particle = __initialize__()
 
 # Print the model configuration to a text-file
 saveconfiguration(model,particle)
 
-
-#pool = multiprocessing.Pool()
-#%%
 # Record the total number of advective timesteps
 Titer = np.arange(particle.initime,particle.initime+particle.length+particle.timestep,particle.timestep).size
 
 # Main Loop
-for tt in np.arange(particle.initime,particle.initime+particle.length,particle.timestep):
-    print('\n')
-    print('%2.2f %% DONE (doy %d)' %( (tt-particle.initime)/(particle.length)*100,tt) ) 
-    
-    # Get current time with datetime
-    time_loop = datetime.datetime.now()
+iteration = [particle.initime+t*particle.timestep for t in range(int( particle.length/particle.timestep ))]
+for tcount,tt in enumerate(iteration):
+    # start loop timer
+    time_loop = time()
+    #print('\n')
+    print('%2.2f %% DONE (doy %3.2f)' %( (tt-particle.initime)/(particle.length)*100, tt)  ) 
     
     ## Get the velocity field relevant to the time step considered, and 
     # already interpolated onto the time step
     model = getvelocityfield(model,tt)
+    # create 3D interpolants of the model fields
+    interpolants = modelinterpolants(tt,model)
    
     ## Advect particles backward in time if backward particle tracking
     
@@ -141,69 +52,93 @@ for tt in np.arange(particle.initime,particle.initime+particle.length,particle.t
     # compute trajectories from t to t+Dt, so backward tracking should
     # use the same velocity field to compute the trajectory from t+Dt
     # to t.
-    """
-    if particle.direction=='backward' and tt == particle.initime:
-        None # Skip a time step
-    elif particle.direction=='backward':
-        None #run advectparticles
-    """
+    
+    #if particle.direction=='backward' and tt == particle.initime:
+    #    None # Skip a time step
+    #elif particle.direction=='backward':
+    #    None #run advectparticles
     
     ## Seed particle when required
     
     # If day of year matches the seeding frequency (threshold is to account
     # for rouding error is inifreq is not a power of 2).
-    if (tt-particle.initime)%particle.inifreq<=1e-10 and particle.ininumber != 0:
+    if (tt-particle.initime) %particle.inifreq<=1e-10 and particle.ininumber != 0:
 
         # If seeding is set to 'dynamic', the iniparticle routine uses the
         # current particle position of the 1st particle to seed (at a 
         # constant depth)
         
-        """
-        if particle.initype=='dynamic') and tt != particle.initime:
-            particle.istart = parti.x(parti.id==1) 
-            particle.irange = 1 
-            particle.irez = 1 
-            
-            particle.jstart = parti.y(parti.id==1) 
-            particle.jrange = 1 
-            particle.jrez = 1 
-            
-            particle.kstart = -50 
-            particle.krange = 1 
-            particle.krez = 1 
-        """
+        #if particle.initype=='dynamic') and tt != particle.initime:
+        #    particle.istart = parti.x(parti.id==1) 
+        #    particle.irange = 1 
+        #    particle.irez = 1 
+        #    
+        #    particle.jstart = parti.y(parti.id==1) 
+        #    particle.jrange = 1 
+        #    particle.jrez = 1 
+        #    
+        #    particle.kstart = -50 
+        #    particle.krange = 1 
+        #    particle.krez = 1 
+        #
         
         # Seed particles
         try:
             parti
         except:
             parti=pd.DataFrame([])
-        parti = iniparticles(tt,particle,parti)
+        parti = iniparticles(tt,particle,parti,model)
         particle.ininumber = particle.ininumber -1 
     
     # printlay total number of particle in the experiment
-    print('Total number of particles is %d.' %len(parti.x))
+    if model['verbose']:
+        print('Total number of particles is %d.' %len(parti.x))
     
     ## Get the model variables interpolated onto the particle's position
     # Interpolate model variables onto particle's position in 4D
-    parti = getpartivar(tt,parti,model)
+    parti = getpartivar(parti,tt,model,interpolants) # this is a vectorized opertion (fast)
     
     ## Save particle position when required
-
     if (tt-particle.initime)%particle.outfreq<=1e-10:
-        saveparti(tt,particle,parti)
+        saveparti(parti,tt,particle,model)
     
-    ## Advect particles forward in time if forward particle tracking
-    if particle.direction=='forward':
-        parti = advectparticles(tt,particle,model,parti)
+    ## Advect particles forward in time if forward particle tracking (parallel)
+    #parti_dask = dd.from_pandas(parti,npartitions=100)
+    if model['verbose']:
+        print('PROJECT PARTICLE DATA... ')
+        
+    def apply_advectparticles_to_df(df,timestep,direction,model): 
+        return df.apply(advectparticles,axis=1,args=(timestep,direction,model))
     
-    ## printlays some info to user
+    if model['parallel']:
+        
+        parti = dd.from_pandas(parti,npartitions=8).map_partitions(lambda df : df.apply(
+                advectparticles,axis=1,args=(thetimestep,thedirection,model)),meta=pd.DataFrame(dtype=float,columns=parti.columns))
+        parti = client.persist(parti)
+        parti = parti.compute()
+        
+    else:
+        parti = apply_advectparticles_to_df(parti,particle.timestep,particle.direction,model)
     
-    # End timer
-    # Displays time for each time loop and projects the remaining time
-    telapsed = datetime.datetime.now()-time_loop 
-    print('This step took %s minutes' %(str( telapsed ).split('.')[0]))
-    print('At this rate, you have %3.2f minutes left' %(telapsed.seconds*(Titer-tt)/60))
+    if model['verbose']:
+        print('DONE')
+        print('#################')
+        print(' ')
     
-totaltime = datetime.datetime.now()-time_total
-print('Entire run took %s minutes' %(str( totaltime ).split('.')[0])) 
+    if model['verbose']:
+        print('Removed %d particles' % np.count_nonzero(parti.isnull()))
+#     if np.count_nonzero(parti.isnull()) == parti.shape[0]:
+#         print('END-OF-RUN No particle left to track')
+#         parti = parti.dropna()
+#         exit(0)
+#     else:
+#         parti = parti.dropna()
+    
+
+    if model['verbose']:
+        # Displays time for each time loop and projects the remaining time
+        telapsed = (time()-time_loop)/60 # in minutes
+        print('This step took %04.2f minutes' %(telapsed) )
+        print('At this rate, you have %4.2f minutes left' %(telapsed*(Titer-tcount+1)))
+    
+print('Entire run took %03.2f minutes' %((time()-time_total)/60)) 
