@@ -1,4 +1,8 @@
-def initialize_experiment00():
+#
+# contains multiple initialize files
+# make your own for your project.
+
+def initialize_default():
     ''' The function sets all the important parameters.
     '''
     
