@@ -1,5 +1,5 @@
 # ignore python executive and temporary  files
-__pycache__/
+**/__pycache__/
 **.ipynb_checkpoints
 **.py[cod]
 **.DS_Store
