@@ -13,11 +13,10 @@ from time import time
 import warnings
 
 # custom functions
-from initialize_comm import __initialize__
 from particle_tracking.model_module import *
 from particle_tracking.parti_module import *
 # select initialization file for your experiment:
-from particle_tracking.initialize import initialize_experiment00 as __initialize__
+from particle_tracking.initialize import initialize_default as __initialize__
 
 # start timer for full script
 time_total = time()
@@ -29,19 +28,18 @@ model, particle = __initialize__()
 saveconfiguration(model,particle)
 
 # Record the total number of advective timesteps
-Titer = np.arange(particle.initime,particle.initime+particle.length+particle.timestep,particle.timestep).size
-
+Titer=np.arange(particle['initime'],particle['initime']+particle['length']+particle['timestep'],particle['timestep']).size
 # Main Loop
-iteration = [particle.initime+t*particle.timestep for t in range(int( particle.length/particle.timestep ))]
+iteration = [particle['initime']+t*particle['timestep'] for t in range(int(particle['length']/particle['timestep'] ))]
 for tcount,tt in enumerate(iteration):
     # start loop timer
     time_loop = time()
     #print('\n')
-    print('%2.2f %% DONE (doy %3.2f)' %( (tt-particle.initime)/(particle.length)*100, tt)  ) 
+    print('%2.2f %% DONE (doy %3.2f)' %( (tt-particle['initime'])/(particle['length'])*100, tt)  ) 
     
     ## Get the velocity field relevant to the time step considered, and 
     # already interpolated onto the time step
-    model = getvelocityfield(model,tt)
+    model = getvelocityfield(model,tt,particle)
     # create 3D interpolants of the model fields
     interpolants = modelinterpolants(tt,model)
    
@@ -62,7 +60,7 @@ for tcount,tt in enumerate(iteration):
     
     # If day of year matches the seeding frequency (threshold is to account
     # for rouding error is inifreq is not a power of 2).
-    if (tt-particle.initime) %particle.inifreq<=1e-10 and particle.ininumber != 0:
+    if (tt-particle['initime']) %particle['inifreq']<=1e-10 and particle['ininumber'] != 0:
 
         # If seeding is set to 'dynamic', the iniparticle routine uses the
         # current particle position of the 1st particle to seed (at a 
@@ -87,8 +85,8 @@ for tcount,tt in enumerate(iteration):
             parti
         except:
             parti=pd.DataFrame([])
-        parti = iniparticles(tt,particle,parti,model)
-        particle.ininumber = particle.ininumber -1 
+        parti = iniparticles(tt,parti,particle,model)
+        particle['ininumber'] = particle['ininumber'] -1 
     
     # printlay total number of particle in the experiment
     if model['verbose']:
@@ -99,7 +97,7 @@ for tcount,tt in enumerate(iteration):
     parti = getpartivar(parti,tt,model,interpolants) # this is a vectorized opertion (fast)
     
     ## Save particle position when required
-    if (tt-particle.initime)%particle.outfreq<=1e-10:
+    if (tt-particle['initime'])%particle['outfreq']<=1e-10:
         saveparti(parti,tt,particle,model)
     
     ## Advect particles forward in time if forward particle tracking (parallel)
@@ -107,18 +105,18 @@ for tcount,tt in enumerate(iteration):
     if model['verbose']:
         print('PROJECT PARTICLE DATA... ')
         
-    def apply_advectparticles_to_df(df,timestep,direction,model): 
-        return df.apply(advectparticles,axis=1,args=(timestep,direction,model))
+    def apply_advectparticles_to_df(df,particle,model): 
+        return df.apply(advectparticles,axis=1,args=(particle,model))
     
     if model['parallel']:
         
         parti = dd.from_pandas(parti,npartitions=8).map_partitions(lambda df : df.apply(
-                advectparticles,axis=1,args=(thetimestep,thedirection,model)),meta=pd.DataFrame(dtype=float,columns=parti.columns))
+                advectparticles,axis=1,args=(particle,model)),meta=pd.DataFrame(dtype=float,columns=parti.columns))
         parti = client.persist(parti)
         parti = parti.compute()
         
     else:
-        parti = apply_advectparticles_to_df(parti,particle.timestep,particle.direction,model)
+        parti = apply_advectparticles_to_df(parti,particle,model)
     
     if model['verbose']:
         print('DONE')

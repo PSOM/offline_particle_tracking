@@ -190,7 +190,8 @@ def iniparticles_test(tt,particle,parti,model):
     
     # Particle ID
     blop = (abs((tt-particle['initime'])/particle['inifreq']*nprtoseed)+\
-                   np.arange(1,abs(tt-particle['initime'])/particle['inifreq']*nprtoseed+nprtoseed+1)).astype(int)
+            np.arange(1,abs(tt-particle['initime'])/particle['inifreq']*\
+                      nprtoseed+nprtoseed+1)).astype(int)
     #blop = length(parti.x)+1:length(parti.x)+1+nprtoseed
     seeding['id'] = blop
     

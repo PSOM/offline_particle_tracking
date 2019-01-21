@@ -53,3 +53,4 @@ def test_advection():
 
         parti = apply_advectparticles_to_df(parti,particle['timestep'],particle['direction'],model)
 
+pwd
