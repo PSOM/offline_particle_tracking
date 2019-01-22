@@ -1,0 +1,6 @@
+# ignore python executive and temporary  files
+**/__pycache__/
+**.ipynb_checkpoints
+**.py[cod]
+**.DS_Stor
+**/default_dir/
